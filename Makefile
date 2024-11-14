@@ -37,9 +37,12 @@ dangling-volumes:
 	-@docker volume prune -f > /dev/null 2>&1
 
 dangling: dangling-images dangling-networks dangling-volumes
+
 # Target to start all services
 up:
 	@echo "${GREEN}\nBUILDING IMAGES, (RE)CREATING, STARTING AND ATTACHING CONTAINERS FOR SERVICES ${NC}"
+	sudo chown -R $(id -u):$(id -g) ./ganache/data
+	sudo chown -R $(id -u):$(id -g) ./postgres/data
 	@docker-compose -f $(COMPOSE_FILE) up --build -d
 
 all: create-directories up
@@ -64,7 +67,7 @@ clean: down
 fclean: down-rmi
 	@$(MAKE) dangling
 	@echo "${GREEN}\nSUPPRIMANT LE DOSSIER BUILD DE TRUFFLE ${NC}"
-	rm -rf ./srcs/requirements/truffle/build  # Ajout de la suppression du dossier build dans fclean
+	sudo rm -rf ./srcs/requirements/truffle/build
 	@if [ -d "${POSTGRES_DIR}/" ]; then \
 			echo "${GREEN}\nREMOVING SAVED DATA IN HOST MACHINE ${NC}"; \
 			chown -R ${USERNAME}:${GROUPNAME} ${POSTGRES_DIR}/; \

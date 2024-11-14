@@ -10,7 +10,6 @@ async function chargerWeb3() {
             resolve();
             return;
         }
-        // Utilisation de window.location.origin pour le domaine dynamique
         const domain = window.location.origin;
         const script = document.createElement('script');
         script.src = `${domain}/static/js/web3.min.js`;
@@ -31,6 +30,7 @@ async function chargerWeb3() {
         document.head.appendChild(script);
     });
 }
+
 // Fonction pour initialiser Web3 et le contrat
 async function initWeb3() {
     if (web3Initialized) {
@@ -38,8 +38,6 @@ async function initWeb3() {
         return;
     }
     await chargerWeb3();
-
-    // Utilisation de window.location.origin pour que l'URL s'ajuste au domaine courant
     const ganacheUrl = `${window.location.origin}/ganache/`;
     window.web3 = new Web3(new Web3.providers.HttpProvider(ganacheUrl));
 
@@ -60,8 +58,16 @@ async function initWeb3() {
 async function enregistrerGagnantSurBlockchain(gagnant) {
     try {
         await initWeb3();
-        const compte = (await web3.eth.getAccounts())[0];
-        const txReceipt = await tournamentContract.methods.enregistrerGagnant(gagnant).send({ from: compte, gas: 500000 });
+
+        // Sélectionne explicitement l'adresse de l'expéditeur dans Ganache
+        const comptes = await web3.eth.getAccounts();
+        const compte = comptes[0]; // Utilise le premier compte par défaut ou spécifie un index selon les besoins
+
+        const txReceipt = await tournamentContract.methods.enregistrerGagnant(gagnant).send({
+            from: compte,
+            gas: 500000
+        });
+
         const block = await web3.eth.getBlock(txReceipt.blockNumber);
         return new Date(block.timestamp * 1000);
     } catch (error) {
@@ -89,7 +95,7 @@ function getGameModeCode(mode) {
 
 async function sendGameSessionToAPI(sessionData) {
     const token = await getValidToken();
-    
+
     // Si aucun token, ne pas faire d'appel à l'API, stocker uniquement en local
     if (!token) {
         console.warn("No access token, game session stored locally only.");
@@ -97,7 +103,7 @@ async function sendGameSessionToAPI(sessionData) {
         return;
     }
 
-    sessionData.session.mode = getGameModeCode(sessionData.session.mode);	
+    sessionData.session.mode = getGameModeCode(sessionData.session.mode);
 
     try {
         const response = await fetch('https://localhost:8000/api/game/register-game-session/', {
@@ -224,7 +230,7 @@ export function registerGameWinner(winnerAlias) {
     const sessionData = JSON.parse(localStorage.getItem('gameSession'));
     if (sessionData) {
         const winners = winnerAlias.split(' & ').map(name => name.trim());
-        
+
         if (winners.length === 2) {
             sessionData.winner1 = winners[0];
             sessionData.winner2 = winners[1];
@@ -237,6 +243,7 @@ export function registerGameWinner(winnerAlias) {
     }
 }
 
+
 export async function registerTournamentWinner(finalWinnerAlias) {
     const sessionData = JSON.parse(localStorage.getItem('gameSession'));
 
@@ -246,14 +253,12 @@ export async function registerTournamentWinner(finalWinnerAlias) {
 
         sendTournamentSessionToAPI(sessionData);  // Appeler l'API de tournoi
 
-		// Enregistrer le gagnant du tournoi sur la blockchain
-		const date = await enregistrerGagnantSurBlockchain(finalWinnerAlias);
-		if (date) {
-			console.log(`Gagnant enregistré sur la blockchain le ${date}`);
-
-			// Appeler terminerTournoi uniquement pour afficher l'historique
-			const wins = { [finalWinnerAlias]: 1 };
-			await terminerTournoi(wins);
-		}
+        // Enregistrer le gagnant du tournoi sur la blockchain
+        const date = await enregistrerGagnantSurBlockchain(finalWinnerAlias);
+        if (date) {
+            console.log(`Gagnant enregistré sur la blockchain le ${date}`);
+            const wins = { [finalWinnerAlias]: 1 };
+            await terminerTournoi(wins);
+        }
     }
 }

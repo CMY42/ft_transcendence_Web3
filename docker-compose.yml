@@ -79,7 +79,7 @@ services:
     restart: always
 
   ganache:
-    image: trufflesuite/ganache-cli
+    build: ./srcs/requirements/ganache
     container_name: ganache
     ports:
       - "8545:8545"
@@ -87,7 +87,6 @@ services:
       - pong_network
     volumes:
       - ganache_data:/data
-    command: ["ganache-cli", "-h", "0.0.0.0", "-p", "8545", "-i", "5777", "-l", "12000000"]
     restart: always
 
   truffle:
