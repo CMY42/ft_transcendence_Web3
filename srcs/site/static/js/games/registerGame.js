@@ -1,8 +1,8 @@
 import { terminerTournoi } from '../../game/js/mods/tournament.js';
+
 let tournamentContract;
 let web3Initialized = false;
 
-// Fonction pour charger Web3
 async function chargerWeb3() {
     return new Promise((resolve, reject) => {
         if (typeof window.Web3 !== 'undefined') {
@@ -31,7 +31,6 @@ async function chargerWeb3() {
     });
 }
 
-// Fonction pour initialiser Web3 et le contrat
 async function initWeb3() {
     if (web3Initialized) {
         console.log('Web3 est déjà initialisé.');
@@ -54,14 +53,12 @@ async function initWeb3() {
     console.log('Contrat initialisé:', tournamentContract);
 }
 
-// Fonction pour enregistrer le gagnant sur la blockchain
 async function enregistrerGagnantSurBlockchain(gagnant) {
     try {
         await initWeb3();
 
-        // Sélectionne explicitement l'adresse de l'expéditeur dans Ganache
         const comptes = await web3.eth.getAccounts();
-        const compte = comptes[0]; // Utilise le premier compte par défaut ou spécifie un index selon les besoins
+        const compte = comptes[0];
 
         const txReceipt = await tournamentContract.methods.enregistrerGagnant(gagnant).send({
             from: compte,
@@ -96,7 +93,6 @@ function getGameModeCode(mode) {
 async function sendGameSessionToAPI(sessionData) {
     const token = await getValidToken();
 
-    // Si aucun token, ne pas faire d'appel à l'API, stocker uniquement en local
     if (!token) {
         console.warn("No access token, game session stored locally only.");
         localStorage.setItem('offlineGameSession', JSON.stringify(sessionData));
@@ -129,7 +125,6 @@ async function sendGameSessionToAPI(sessionData) {
 async function sendTournamentSessionToAPI(sessionData) {
     const token = await getValidToken();
 
-    // Si aucun token, ne pas faire d'appel à l'API, stocker uniquement en local
     if (!token) {
         console.warn("No access token, tournament session stored locally only.");
         localStorage.setItem('offlineTournamentSession', JSON.stringify(sessionData));
@@ -173,13 +168,11 @@ async function getValidToken() {
 
     if (!accessToken) {
         console.warn("Access token is missing. Game will be played in offline mode.");
-        return null; // Retourne null si aucun token, pour fonctionner hors-ligne
+        return null;
     }
 
     return isTokenExpired(accessToken) ? await refreshAccessToken(refreshToken) : accessToken;
 }
-
-
 
 function isTokenExpired(token) {
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -187,8 +180,6 @@ function isTokenExpired(token) {
     return payload.exp < currentTime;
 }
 
-
-// Fonction pour formater la date en 'DD/MM/YYYY HH:MM:SS'
 function formatDateToStandard(date) {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -213,18 +204,15 @@ export function storeGameSession() {
             return userId ? { user: userId } : { alias: name };
         });
 
-        // Formatage correct de start_date avec formatDateToStandard avant stockage
         const sessionData = {
             session: { mode },
             players,
-            start_date: formatDateToStandard(new Date()) // Assure le formatage correct
+            start_date: formatDateToStandard(new Date())
         };
 
-        // Enregistrer le format de date correct dans localStorage
         localStorage.setItem('gameSession', JSON.stringify(sessionData));
     }
 }
-//new
 
 export function registerGameWinner(winnerAlias) {
     const sessionData = JSON.parse(localStorage.getItem('gameSession'));
@@ -243,7 +231,6 @@ export function registerGameWinner(winnerAlias) {
     }
 }
 
-
 export async function registerTournamentWinner(finalWinnerAlias) {
     const sessionData = JSON.parse(localStorage.getItem('gameSession'));
 
@@ -251,9 +238,8 @@ export async function registerTournamentWinner(finalWinnerAlias) {
         sessionData.winner1 = finalWinnerAlias;
         delete sessionData.winner2;
 
-        sendTournamentSessionToAPI(sessionData);  // Appeler l'API de tournoi
+        sendTournamentSessionToAPI(sessionData);
 
-        // Enregistrer le gagnant du tournoi sur la blockchain
         const date = await enregistrerGagnantSurBlockchain(finalWinnerAlias);
         if (date) {
             console.log(`Gagnant enregistré sur la blockchain le ${date}`);

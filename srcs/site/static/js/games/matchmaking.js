@@ -1,60 +1,45 @@
-document.addEventListener('DOMContentLoaded', () => {
+export async function initMatchmaking() {
     const accessToken = localStorage.getItem('accessToken');
-    
     if (!accessToken) {
         console.log("User not logged in. Matchmaking disabled.");
-        return; // Arrête l'exécution du script si l'utilisateur n'est pas connecté
+        return;
     }
 
-    // Code existant de matchmaking.js
     const matchmakingButton = document.getElementById('matchmakingButton');
-    matchmakingButton.addEventListener('click', loadMatchmaking);
-
-    initializeMatchmakingButton();
-});
+    if (matchmakingButton) {
+        matchmakingButton.addEventListener('click', loadMatchmaking);
+        await initializeMatchmakingButton();
+    }
+}
 
 async function initializeMatchmakingButton() {
     const friends = await fetchFriends();
     const userStats = await fetchUserStats();
 
-    const selectedLanguage = localStorage.getItem('selectedLanguage') || 'en';
-
-    let userWinPercentageText, addFriendsText;
-
-    if (selectedLanguage === 'fr') {
-        userWinPercentageText = "Mon pourcentage de victoire : ";
-        addFriendsText = "Ajouter des amis";
-    } else if (selectedLanguage === 'es') {
-        userWinPercentageText = "Mi porcentaje de victorias : ";
-        addFriendsText = "Agregar amigos";
-    } else if (selectedLanguage === 'bg') {
-        userWinPercentageText = "Моят процент на победи : ";
-        addFriendsText = "Добавяне на приятели";
-    } else {
-        userWinPercentageText = "My win percentage : ";
-        addFriendsText = "Add friends";
-    }
+    let userWinPercentageText = "My win percentage : ";
+    let addFriendsText = "Add friends";
 
     if (userStats) {
         const userWinPercentage = calculateWinPercentage(userStats);
-        document.getElementById('userWinPercentageText').textContent = `${userWinPercentageText} ${userWinPercentage}%`;
+        const userWinPercentageElement = document.getElementById('userWinPercentageText');
+        if (userWinPercentageElement) {
+            userWinPercentageElement.textContent = `${userWinPercentageText} ${userWinPercentage}%`;
+        }
     }
 
     const matchmakingButton = document.getElementById('matchmakingButton');
-
     if (friends.length === 0) {
-        // Si l'utilisateur n'a pas d'amis, ajuster le bouton pour rediriger vers la page d'ajout d'amis
-        matchmakingButton.textContent = addFriendsText;
-        matchmakingButton.onclick = () => {
-            window.location.href = 'profile.html?showAllUsers=true';
-        };
-    } else {
+        if (matchmakingButton) {
+            matchmakingButton.textContent = addFriendsText;
+            matchmakingButton.onclick = () => {
+                window.location.href = '#/profile';
+            };
+        }
+    } else if (matchmakingButton) {
         matchmakingButton.onclick = loadMatchmaking;
     }
 }
 
-
-// Fonction pour récupérer les statistiques de l'utilisateur
 async function fetchUserStats() {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) return null;
@@ -69,12 +54,11 @@ async function fetchUserStats() {
         });
         if (response.ok) return await response.json();
     } catch (error) {
-        console.error('Error retrieving user statistics :', error);
+        console.error('Error retrieving user statistics:', error);
     }
     return null;
 }
 
-// Fonction pour récupérer la liste des amis
 async function fetchFriends() {
     const accessToken = localStorage.getItem('accessToken');
 
@@ -88,12 +72,11 @@ async function fetchFriends() {
         });
         if (response.ok) return await response.json();
     } catch (error) {
-        console.error('Error retrieving friends :', error);
+        console.error('Error retrieving friends:', error);
     }
     return [];
 }
 
-// Calcul du pourcentage de victoires global
 function calculateWinPercentage(stats) {
     const played = stats.total_played || 0;
     const wins = stats.total_wins || 0;
@@ -107,17 +90,13 @@ async function loadMatchmaking() {
     if (userStats && friends.length) {
         const sortedFriends = sortFriendsByWinPercentage(friends, userStats);
         displaySortedFriends(sortedFriends, userStats);
-    } 
-	else {
+    } else {
         console.error("Unable to retrieve user or friend statistics.");
     }
 }
 
-// Fonction pour récupérer les statistiques de chaque ami
 async function fetchFriendsWithStats() {
-    const accessToken = localStorage.getItem('accessToken');
     const friendsData = await fetchFriends();
-
     if (!friendsData || !friendsData.length) return [];
 
     return await Promise.all(friendsData.map(async (friendEntry) => {
@@ -127,7 +106,6 @@ async function fetchFriendsWithStats() {
     })).then(friends => friends.filter(friend => friend !== null));
 }
 
-// Fonction pour récupérer les statistiques d'un ami donné
 async function fetchFriendStats(friendId) {
     const accessToken = localStorage.getItem('accessToken');
 
@@ -138,17 +116,16 @@ async function fetchFriendStats(friendId) {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ user_id: friendId })
+            body: JSON.stringify({ user_id: friendId }),
         });
 
         if (response.ok) return await response.json();
     } catch (error) {
-        console.error('Error retrieving friend\'s stats :', error);
+        console.error('Error retrieving friend\'s stats:', error);
     }
     return null;
 }
 
-// Fonction de tri des amis par rapport aux statistiques de l'utilisateur, basé sur le pourcentage de victoires global
 function sortFriendsByWinPercentage(friends, userStats) {
     const userWinPercentage = calculateWinPercentage(userStats);
     return friends.map(friend => {
@@ -162,18 +139,19 @@ function sortFriendsByWinPercentage(friends, userStats) {
     });
 }
 
-// Affichage des amis triés dans l'accordéon
 function displaySortedFriends(sortedFriends, userStats) {
     const friendList = document.getElementById('friendMatchmakingList');
-    friendList.innerHTML = ''; // Réinitialise la liste
+    if (friendList) {
+        friendList.innerHTML = '';
 
-    sortedFriends.forEach(friend => {
-        const friendWinPercentage = friend.winPercentage;
-        const listItem = document.createElement('li');
-        listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
-        listItem.innerHTML = `
-            <span><strong>${friend.username}</strong> - <span data-translate="global_win_rate">Global Win Rate:</span> ${friendWinPercentage}%</span>
-        `;
-        friendList.appendChild(listItem);
-    });
+        sortedFriends.forEach(friend => {
+            const friendWinPercentage = friend.winPercentage;
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+            listItem.innerHTML = `
+                <span><strong>${friend.username}</strong> - Global Win Rate: ${friendWinPercentage}%</span>
+            `;
+            friendList.appendChild(listItem);
+        });
+    }
 }

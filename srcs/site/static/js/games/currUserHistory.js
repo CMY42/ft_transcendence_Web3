@@ -1,7 +1,9 @@
-document.addEventListener('DOMContentLoaded', () => {
+export function initUserMatchHistory() {
     const historyContainerLink = document.querySelector('[href="#matchHistoryContainer"]');
-    historyContainerLink.addEventListener('click', fetchUserMatchHistory);
-});
+    if (historyContainerLink) {
+        historyContainerLink.addEventListener('click', fetchUserMatchHistory);
+    }
+}
 
 async function fetchUserMatchHistory() {
     const accessToken = localStorage.getItem('accessToken');
@@ -25,31 +27,30 @@ async function fetchUserMatchHistory() {
             const matchHistory = await response.json();
             displayMatchHistory(matchHistory);
         } else {
-            matchHistoryContainer.innerHTML = '<p class="text-danger" data-translate="match_history_unavailable">Impossible de récupérer l\'historique des parties.</p>';
+            matchHistoryContainer.innerHTML = '<p class="text-danger">Impossible de récupérer l\'historique des parties.</p>';
         }
     } catch (error) {
         console.error('Error retrieving game history :', error);
-        matchHistoryContainer.innerHTML = '<p class="text-danger" data-translate="match_history_error">Erreur lors de la récupération de l\'historique des parties.</p>';
+        matchHistoryContainer.innerHTML = '<p class="text-danger">Erreur lors de la récupération de l\'historique des parties.</p>';
     }
 }
 
 function displayMatchHistory(matches) {
     const matchHistoryContainer = document.getElementById('matchHistoryContainer');
-    matchHistoryContainer.innerHTML = ''; // Efface le contenu précédent
+    matchHistoryContainer.innerHTML = '';
 
     if (matches.length === 0) {
-        matchHistoryContainer.innerHTML = '<p data-translate="no_matches_played">Aucune partie jouée pour le moment.</p>';
+        matchHistoryContainer.innerHTML = '<p>Aucune partie jouée pour le moment.</p>';
         return;
     }
 
     matches.forEach((match, index) => {
         const matchCard = document.createElement('div');
-        matchCard.classList.add('card', 'mb-3', 'w-auto'); // Style de carte pour chaque fiche
+        matchCard.classList.add('card', 'mb-3', 'w-auto');
         matchCard.style.border = "1px solid";
         matchCard.style.backgroundColor = `var(${match.result === 'win' ? '--bs-success-bg-subtle' : '--bs-danger-bg-subtle'})`;
         matchCard.style.borderColor = `var(${match.result === 'win' ? '--bs-success-border-subtle' : '--bs-danger-border-subtle'})`;
 
-        // Convertir le mode en texte complet
         const modeText = getModeText(match.mode);
 
         matchCard.innerHTML = `
@@ -57,11 +58,11 @@ function displayMatchHistory(matches) {
                 <div class="col-md-8 d-flex flex-column justify-content-center">
                     <div class="card-body">
                         <h5 class="card-title">${modeText}</h5>
-						<p class="card-text user-joined-date">${formatDate(match.date_played)}</p>
+                        <p class="card-text user-joined-date">${formatDate(match.date_played)}</p>
                     </div>
                 </div>
                 <div class="col-md-4 d-flex align-items-center justify-content-center">
-                    <button class="btn ${match.result === 'win' ? 'btn-outline-success' : 'btn-outline-danger'}" data-bs-toggle="collapse" data-bs-target="#matchDetails${index}" data-translate="details_button">
+                    <button class="btn ${match.result === 'win' ? 'btn-outline-success' : 'btn-outline-danger'}" data-bs-toggle="collapse" data-bs-target="#matchDetails${index}">
                         Détails
                     </button>
                 </div>
@@ -69,9 +70,9 @@ function displayMatchHistory(matches) {
             <div id="matchDetails${index}" class="collapse">
                 <!-- Détails supplémentaires affichés en accordéon -->
                 <div class="card-body d-flex flex-column justify-content-center">
-                    <p><strong data-translate="duration">Durée :</strong> ${match.duration}</p>
-                    <p><strong data-translate="number_of_players">Nombre de joueurs :</strong> ${match.number_of_players}</p>
-                    ${match.teammate ? `<p><strong data-translate="teammate">Coéquipier :</strong> ${match.teammate}</p>` : ''}
+                    <p><strong>Durée :</strong> ${match.duration}</p>
+                    <p><strong>Nombre de joueurs :</strong> ${match.number_of_players}</p>
+                    ${match.teammate ? `<p><strong>Coéquipier :</strong> ${match.teammate}</p>` : ''}
                 </div>
             </div>
         `;
@@ -80,7 +81,6 @@ function displayMatchHistory(matches) {
     });
 }
 
-// Helper functions
 function getModeText(mode) {
     switch (mode) {
         case 'VS':

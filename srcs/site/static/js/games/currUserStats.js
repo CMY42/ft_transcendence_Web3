@@ -1,6 +1,4 @@
-document.addEventListener('DOMContentLoaded', fetchUserStats);
-
-async function fetchUserStats() {
+export async function fetchUserStats() {
     const accessToken = localStorage.getItem('accessToken');
     const statsContainer = document.getElementById('statsContainer');
     const totalPlayedElement = document.getElementById('totalPlayed');
@@ -24,16 +22,13 @@ async function fetchUserStats() {
         if (response.ok) {
             const stats = await response.json();
 
-            // Calcul du pourcentage de victoires
             const totalWins = stats.total_wins;
             const totalPlayed = stats.total_played;
             const winPercentage = totalPlayed ? Math.floor((totalWins / totalPlayed) * 100) : 0;
 
-            // Affichage des statistiques globales
             totalPlayedElement.textContent = totalPlayed;
             winPercentageElement.textContent = winPercentage;
 
-            // Insertion des statistiques par mode dans le tableau
             const modes = ['VS', 'TN', 'LS', 'BB'];
             modeStatsTable.innerHTML = modes.map(mode => {
                 const played = stats[`${mode}_played`] || 0;
@@ -48,11 +43,11 @@ async function fetchUserStats() {
                 `;
             }).join('');
         } else {
-            statsContainer.innerHTML = '<p class="text-danger" data-translate="stats_unavailable">Impossible de récupérer les statistiques.</p>';
+            statsContainer.innerHTML = '<p class="text-danger">Impossible de récupérer les statistiques.</p>';
         }
     } catch (error) {
         console.error('Error retrieving statistics :', error);
-        statsContainer.innerHTML = '<p class="text-danger" data-translate="stats_error">Erreur lors de la récupération des statistiques.</p>';
+        statsContainer.innerHTML = '<p class="text-danger">Erreur lors de la récupération des statistiques.</p>';
     }
 }
 

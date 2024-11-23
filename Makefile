@@ -8,10 +8,10 @@ UNAME_S := $(shell uname -s)
 POSTGRES_DIR := ./postgres
 SITE_DIR := ./srcs/site
 USERNAME := $$(whoami)
-GROUPNAME = 2022_lausanne
+GROUPNAME = staff
 
 ifeq (${UNAME_S}, "Darwin")
-	GROUPNAME = 2022_lausanne
+	GROUPNAME = staff
 endif
 
 create-directories:
@@ -20,9 +20,18 @@ create-directories:
 		mkdir -p ${POSTGRES_DIR}/data; \
 	fi
 	@if [ ! -d "./ganache/data" ]; then \
-		echo "${GREEN}\nCREATING DIRECTORY \"./ganache/data\" FOR GANACHE ${NC}"; \
-		mkdir -p ./ganache/data; \
+	echo "${GREEN}\nCREATING DIRECTORY \"./ganache/data\" FOR GANACHE ${NC}"; \
+	mkdir -p ./ganache/data; \
 	fi
+
+set-permissions:
+	@echo "${GREEN}\nSETTING PERMISSIONS FOR \"${POSTGRES_DIR}/data\" DATA DIRECTORY ${NC}"
+	@if [ ${UNAME_S} = "Darwin" ]; then \
+		chown -R ${USERNAME}:${GROUPNAME} ${POSTGRES_DIR}/; \
+	elif [ ${UNAME_S} = "Linux" ]; then \
+		chown -R 102:104 ${POSTGRES_DIR}/; \
+	fi
+	@chmod -R 775 ${POSTGRES_DIR}/
 
 dangling-images:
 	@echo "${GREEN}\nCLEANING DANGLING IMAGES ${NC}"
@@ -37,15 +46,12 @@ dangling-volumes:
 	-@docker volume prune -f > /dev/null 2>&1
 
 dangling: dangling-images dangling-networks dangling-volumes
-
 # Target to start all services
 up:
 	@echo "${GREEN}\nBUILDING IMAGES, (RE)CREATING, STARTING AND ATTACHING CONTAINERS FOR SERVICES ${NC}"
-	sudo chown -R $(id -u):$(id -g) ./ganache/data
-	sudo chown -R $(id -u):$(id -g) ./postgres/data
 	@docker-compose -f $(COMPOSE_FILE) up --build -d
 
-all: create-directories up
+all: create-directories set-permissions up
 
 # Target to stop and remove containers and networks
 down:
@@ -56,8 +62,7 @@ down:
 down-rmi:
 	@echo "${GREEN}\nSTOPPING CONTAINERS AND REMOVING CONTAINERS, NETWORKS, IMAGES, AND VOLUMES USED BY SERVICES ${NC}"
 	@docker-compose -f $(COMPOSE_FILE) down --rmi all --volumes --remove-orphans
-	@docker volume rm postgres_data || true
-	@docker volume rm ganache_data || true
+	@docker volume rm postgres_data || true  # <-- Forcer la suppression du volume
 	@docker system prune --volumes -f
 
 clean: down
@@ -67,7 +72,8 @@ clean: down
 fclean: down-rmi
 	@$(MAKE) dangling
 	@echo "${GREEN}\nSUPPRIMANT LE DOSSIER BUILD DE TRUFFLE ${NC}"
-	sudo rm -rf ./srcs/requirements/truffle/build
+	rm -rf ./srcs/requirements/truffle/build
+	rm -rf ./ganache
 	@if [ -d "${POSTGRES_DIR}/" ]; then \
 			echo "${GREEN}\nREMOVING SAVED DATA IN HOST MACHINE ${NC}"; \
 			chown -R ${USERNAME}:${GROUPNAME} ${POSTGRES_DIR}/; \

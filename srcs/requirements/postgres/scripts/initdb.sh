@@ -6,12 +6,6 @@
 
 set -e # Exit immediately if a command exits with a non-zero status.
 
-# Si le répertoire de données existe déjà, le supprimer pour forcer la réinitialisation
-if [ -d "$PGDATA" ] ; then
-  echo "Deleting existing data directory"
-  rm -rf "$PGDATA"
-fi
-
 # Si le répertoire de données n'existe toujours pas, initialiser la base de données
 if [ ! -d "$PGDATA" ] ; then
 
